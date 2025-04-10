@@ -35,7 +35,6 @@ def fetch_sitemap_urls(sitemap_url):
                 print(f"Found URLs in sitemap {sitemap_url}:")
                 for url in urls:
                     print(url)
-                fetch_and_extract_loc_from_xml(urls[0])
                 fetch_and_extract_loc_from_xml(urls[1])
             else:
                 print("No <loc> tags found.")
@@ -73,7 +72,7 @@ def extract_content_from_article(url):
             slug = extract_and_print_content(soup, 'h2', 'abp-article-slug', return_content=True)
             image_url = extract_image_src(soup)
             byline_author = extract_and_print_content(soup, 'div', 'abp-article-byline-author', return_content=True)
-            article_detail = extract_and_print_content(soup, 'div', 'abp-story-detail', return_content=True, exclude_class=['readMore', 'twitter-tweet'])
+            article_detail = extract_and_print_content(soup, 'div', 'abp-story-detail', return_content=True, exclude_class=['readMore', 'twitter-tweet','abp-crick-wrap'])
 
             if all([title, slug, image_url, byline_author, article_detail]):
                 store_article_data(url, title, slug, image_url, byline_author, article_detail)
@@ -115,7 +114,7 @@ def extract_image_src(soup):
 def store_article_data(news_source_url, title, slug, image_url, byline_author, article_detail):
     try:
         # Get today's date in DD-MM-YY format
-        today_date = datetime.datetime.today().strftime('%d-%m-%y')
+        today_date = datetime.datetime.today().strftime('%d-%m-%Y')
         # Define the path for the daily image folder
         daily_image_dir = os.path.join(IMAGE_DIR, today_date)
 
