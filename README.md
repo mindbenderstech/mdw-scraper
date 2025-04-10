@@ -1,6 +1,7 @@
 # mdw-scraper
 
 #virtual environment setup  
+
 If you want to setup virtual environment
 steps:
 1. Go to <file> -> (settings)
@@ -10,6 +11,7 @@ steps:
 5. This will create your virtual environment
    
 #lib installation
+
 first check what is installed by running pip list. 
 List of required libraries
 {beautifulsoup4, 
