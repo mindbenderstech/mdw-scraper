@@ -1,6 +1,6 @@
 # mdw-scraper
 
-#virtual environment setup  
+### virtual environment setup  
 
 If you want to setup virtual environment
 steps:
@@ -10,7 +10,7 @@ steps:
 4. Then you will see a window which has Environment: select (generate new) , Type: select (Virtulenv), Base Python: select (latest python verson), Location select (default)
 5. This will create your virtual environment
    
-#lib installation
+### lib installation
 
 first check what is installed by running pip list. 
 List of required libraries
