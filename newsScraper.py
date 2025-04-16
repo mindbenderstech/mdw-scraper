@@ -31,11 +31,21 @@ def fetch_sitemap_urls(sitemap_url):
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'xml')
             urls = [loc.get_text() for loc in soup.find_all('loc')]
+            lastmods = [lastmod.get_text() for lastmod in soup.find_all('lastmod')]
+
             if urls:
                 print(f"Found URLs in sitemap {sitemap_url}:")
-                for url in urls:
-                    print(url)
-                fetch_and_extract_loc_from_xml(urls[1])
+
+                # Print every URL and its corresponding lastmod date
+                for i in range(len(urls)):
+                    print(f"URL: {urls[i]}, Lastmod: {lastmods[i]}")
+
+                # Pass required urls
+                if len(urls) >= 2 and len(lastmods) >= 2:
+                    fetch_and_extract_loc_from_xml(urls[0],lastmods[0])
+                    fetch_and_extract_loc_from_xml(urls[1], lastmods[1])
+                else:
+                    print("Not enough URLs to pass.")
             else:
                 print("No <loc> tags found.")
         else:
@@ -43,18 +53,24 @@ def fetch_sitemap_urls(sitemap_url):
     except Exception as e:
         print(f"Error fetching sitemap {sitemap_url}: {e}")
 
-def fetch_and_extract_loc_from_xml(xml_url):
+
+def fetch_and_extract_loc_from_xml(xml_url,lastmod):
     try:
         response = requests.get(xml_url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'xml')
             loc_tags = soup.find_all('loc')
+            date_and_time = [lastmod.get_text() for lastmod in soup.find_all('lastmod')]
             print(f"\nVisiting requested xml {xml_url}")
 
             # Process up to 2 URLs (or more if desired) from loc_tags
             for i, loc_tag in enumerate(loc_tags[:2]):  # Adjust the slice to fetch more URLs if needed
-                print(f"\nFound article URL {i + 1}: {loc_tag.get_text()}")
-                extract_content_from_article(loc_tag.get_text())
+                if i < len(date_and_time):
+                    print(f"\nFound article URL {i + 1}: {loc_tag.get_text()}")
+                    print(f"Article Date and Time: {date_and_time[i]}")
+
+                    converted_article_datetime = datetime.datetime.fromisoformat(date_and_time[i])
+                extract_content_from_article(loc_tag.get_text(), lastmod, converted_article_datetime)
 
             if not loc_tags:
                 print("No <loc> tags found.")
@@ -63,7 +79,7 @@ def fetch_and_extract_loc_from_xml(xml_url):
     except Exception as e:
         print(f"Error fetching XML file {xml_url}: {e}")
 
-def extract_content_from_article(url):
+def extract_content_from_article(url,lastmod ,article_datetime):
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -75,7 +91,7 @@ def extract_content_from_article(url):
             article_detail = extract_and_print_content(soup, 'div', 'abp-story-detail', return_content=True, exclude_class=['readMore', 'twitter-tweet','abp-crick-wrap'])
 
             if all([title, slug, image_url, byline_author, article_detail]):
-                store_article_data(url, title, slug, image_url, byline_author, article_detail)
+                store_article_data(url, title, slug, image_url, byline_author, article_detail, lastmod, article_datetime)
             else:
                 print(f"Missing required fields for article: {url}. Skipping.")
         else:
@@ -111,10 +127,10 @@ def extract_image_src(soup):
     print("No image found.")
     return None
 
-def store_article_data(news_source_url, title, slug, image_url, byline_author, article_detail):
+def store_article_data(news_source_url, title, slug, image_url, byline_author, article_detail, lastmod, article_datetime):
     try:
         # Get today's date in DD-MM-YY format
-        today_date = datetime.datetime.today().strftime('%d-%m-%Y')
+        today_date = datetime.datetime.today().strftime('%Y-%m-%d')
         # Define the path for the daily image folder
         daily_image_dir = os.path.join(IMAGE_DIR, today_date)
 
@@ -146,9 +162,9 @@ def store_article_data(news_source_url, title, slug, image_url, byline_author, a
                             print(f"Image saved: {local_image_path}")
                     # Insert article data into the database, including the local image path
                     cursor.execute(""" 
-                        INSERT INTO news_articles (news_source_url, title, slug, image_path, byline_author, article_detail)
-                        VALUES (%s, %s, %s, %s, %s, %s);
-                    """, (news_source_url, title, slug, local_image_path, byline_author, article_detail))
+                        INSERT INTO news_articles (news_source_url, title, slug, image_path, byline_author, article_detail, article_date, article_date_and_time)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (news_source_url, title, slug, local_image_path, byline_author, article_detail, lastmod, article_datetime))
                     conn.commit()
                     print("Article stored.")
     except Exception as error:
