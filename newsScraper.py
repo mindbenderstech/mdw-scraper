@@ -62,6 +62,7 @@ def fetch_and_extract_loc_from_xml(xml_url,lastmod):
             loc_tags = soup.find_all('loc')
             date_and_time = [lastmod.get_text() for lastmod in soup.find_all('lastmod')]
             print(f"\nVisiting requested xml {xml_url}")
+            converted_article_datetime = None
 
             # Process up to 2 URLs (or more if desired) from loc_tags
             for i, loc_tag in enumerate(loc_tags[:2]):  # Adjust the slice to fetch more URLs if needed
