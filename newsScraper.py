@@ -8,12 +8,12 @@ import datetime
 IMAGE_DIR = "images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
-def fetch_robots_txt(url):
-    url = url.rstrip('/') + '/robots.txt' if not url.endswith('/robots.txt') else url
+def fetch_robots_txt(news_website_url):
+    robots_url = news_website_url.rstrip('/') + '/robots.txt' if not news_website_url.endswith('/robots.txt') else news_website_url
     try:
-        response = requests.get(url)
+        response = requests.get(robots_url)
         if response.status_code == 200:
-            print(f"\nrobots.txt content from {url}:\n{response.text}")
+            print(f"\nrobots.txt content from {robots_url}:\n{response.text}")
             sitemap_url = next((line.split(":", 1)[1].strip() for line in response.text.splitlines() if line.lower().startswith('sitemap:')), None)
             if sitemap_url:
                 print(f"\nVisiting sitemap: {sitemap_url}")
@@ -23,27 +23,27 @@ def fetch_robots_txt(url):
         else:
             print(f"Failed to fetch robots.txt: {response.status_code}")
     except Exception as e:
-        print(f"Error fetching {url}: {e}")
+        print(f"Error fetching {robots_url}: {e}")
 
 def fetch_sitemap_urls(sitemap_url):
     try:
         response = requests.get(sitemap_url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'xml')
-            urls = [loc.get_text() for loc in soup.find_all('loc')]
+            news_urls = [loc.get_text() for loc in soup.find_all('loc')]
             lastmods = [lastmod.get_text() for lastmod in soup.find_all('lastmod')]
 
-            if urls:
+            if news_urls:
                 print(f"Found URLs in sitemap {sitemap_url}:")
 
                 # Print every URL and its corresponding lastmod date
-                for i in range(len(urls)):
-                    print(f"URL: {urls[i]}, Lastmod: {lastmods[i]}")
+                for i in range(len(news_urls)):
+                    print(f"URL: {news_urls[i]}, Lastmod: {lastmods[i]}")
 
-                # Pass required urls
-                if len(urls) >= 2 and len(lastmods) >= 2:
-                    fetch_and_extract_loc_from_xml(urls[0],lastmods[0])
-                    fetch_and_extract_loc_from_xml(urls[1], lastmods[1])
+                # Pass required news_urls
+                if len(news_urls) >= 2 and len(lastmods) >= 2:
+                    fetch_and_extract_loc_from_xml(news_urls[0], lastmods[0])
+                    fetch_and_extract_loc_from_xml(news_urls[1], lastmods[1])
                 else:
                     print("Not enough URLs to pass.")
             else:
@@ -54,7 +54,7 @@ def fetch_sitemap_urls(sitemap_url):
         print(f"Error fetching sitemap {sitemap_url}: {e}")
 
 
-def fetch_and_extract_loc_from_xml(xml_url,lastmod):
+def fetch_and_extract_loc_from_xml(xml_url,news_date):
     try:
         response = requests.get(xml_url)
         if response.status_code == 200:
@@ -71,7 +71,7 @@ def fetch_and_extract_loc_from_xml(xml_url,lastmod):
                     print(f"Article Date and Time: {date_and_time[i]}")
 
                     converted_article_datetime = datetime.datetime.fromisoformat(date_and_time[i])
-                extract_content_from_article(loc_tag.get_text(), lastmod, converted_article_datetime)
+                extract_content_from_article(loc_tag.get_text(), news_date, converted_article_datetime)
 
             if not loc_tags:
                 print("No <loc> tags found.")
@@ -80,25 +80,26 @@ def fetch_and_extract_loc_from_xml(xml_url,lastmod):
     except Exception as e:
         print(f"Error fetching XML file {xml_url}: {e}")
 
-def extract_content_from_article(url,lastmod ,article_datetime):
+def extract_content_from_article(article_url,news_date ,article_datetime):
     try:
-        response = requests.get(url)
+        response = requests.get(article_url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             title = extract_and_print_content(soup, 'h1', 'abp-article-title', return_content=True)
             slug = extract_and_print_content(soup, 'h2', 'abp-article-slug', return_content=True)
             image_url = extract_image_src(soup)
             byline_author = extract_and_print_content(soup, 'div', 'abp-article-byline-author', return_content=True)
-            article_detail = extract_and_print_content(soup, 'div', 'abp-story-detail', return_content=True, exclude_class=['readMore', 'twitter-tweet','abp-crick-wrap'])
+            article_detail = extract_and_print_content(soup, 'div', 'abp-story-detail', return_content=True, exclude_class=['readMore', 'twitter-tweet','abp-crick-wrap','instagram-media'])
 
             if all([title, slug, image_url, byline_author, article_detail]):
-                store_article_data(url, title, slug, image_url, byline_author, article_detail, lastmod, article_datetime)
+                store_article_data(article_url, title, slug, image_url, byline_author, article_detail, news_date,
+                                   article_datetime)
             else:
-                print(f"Missing required fields for article: {url}. Skipping.")
+                print(f"Missing required fields for article: {article_url}. Skipping.")
         else:
-            print(f"Failed to fetch content from {url}: {response.status_code}")
+            print(f"Failed to fetch content from {article_url}: {response.status_code}")
     except Exception as e:
-        print(f"Error fetching content from {url}: {e}")
+        print(f"Error fetching content from {article_url}: {e}")
 
 def extract_and_print_content(soup, tag, class_name, return_content=False, exclude_class=None):
     content = soup.find_all(tag, class_=class_name)
@@ -129,7 +130,7 @@ def extract_image_src(soup):
     print("No image found.")
     return None
 
-def store_article_data(news_source_url, title, slug, image_url, byline_author, article_detail, lastmod, article_datetime):
+def store_article_data(news_source_url, title, slug, image_url, byline_author, article_detail, article_date, article_datetime):
     try:
         # Get today's date in DD-MM-YY format
         today_date = datetime.datetime.today().strftime('%Y-%m-%d')
@@ -166,7 +167,7 @@ def store_article_data(news_source_url, title, slug, image_url, byline_author, a
                     cursor.execute(""" 
                         INSERT INTO news_articles (news_source_url, title, slug, image_path, byline_author, article_detail, article_date, article_date_and_time)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-                    """, (news_source_url, title, slug, local_image_path, byline_author, article_detail, lastmod, article_datetime))
+                    """, (news_source_url, title, slug, local_image_path, byline_author, article_detail, article_date, article_datetime))
                     conn.commit()
                     print("Article stored.")
     except Exception as error:
