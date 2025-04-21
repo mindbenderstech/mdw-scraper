@@ -114,6 +114,7 @@ def extract_and_print_content(soup, tag, class_name, return_content=False, exclu
         if return_content:
             return result
         print(f"\n{class_name}: {result}")
+        return None
     else:
         print(f"No {class_name} found.")
         return None
@@ -171,7 +172,7 @@ def store_article_data(news_source_url, title, slug, image_url, byline_author, a
     except Exception as error:
         print(f"Error storing article: {error}")
 
-# Function to reset sequence if table is empty
+# Function to reset a sequence if the table is empty
 def reset_sequence_if_empty():
     try:
         # Connect to PostgreSQL
@@ -184,7 +185,7 @@ def reset_sequence_if_empty():
 
                 if row_count == 0:
                     print("Table is empty. Resetting ID sequence.")
-                    # Reset the sequence to 1 if table is empty
+                    # Reset the sequence to 1 if the table is empty
                     cursor.execute("SELECT setval(pg_get_serial_sequence('news_articles', 'id'), 1, false);")
                     conn.commit()
                     print("ID sequence reset to 1.")
