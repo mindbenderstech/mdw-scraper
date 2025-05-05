@@ -42,8 +42,9 @@ def fetch_sitemap_urls(sitemap_url):
 
                 # Pass required news_urls
                 if len(news_urls) >= 2 and len(lastmods) >= 2:
-                    fetch_and_extract_loc_from_xml(news_urls[0], lastmods[0])
+                    # fetch_and_extract_loc_from_xml(news_urls[0], lastmods[0])
                     fetch_and_extract_loc_from_xml(news_urls[1], lastmods[1])
+                    # fetch_and_extract_loc_from_xml(news_urls[2], lastmods[2])
                 else:
                     print("Not enough URLs to pass.")
             else:
@@ -65,7 +66,7 @@ def fetch_and_extract_loc_from_xml(xml_url,news_date):
             converted_article_datetime = None
 
             # Process up to 2 URLs (or more if desired) from loc_tags
-            for i, loc_tag in enumerate(loc_tags[:2]):  # Adjust the slice to fetch more URLs if needed
+            for i, loc_tag in enumerate(loc_tags):  # Adjust the slice to fetch more URLs if needed
                 if i < len(date_and_time):
                     print(f"\nFound article URL {i + 1}: {loc_tag.get_text()}")
                     print(f"Article Date and Time: {date_and_time[i]}")
@@ -89,7 +90,8 @@ def extract_content_from_article(article_url,news_date ,article_datetime):
             slug = extract_and_print_content(soup, 'h2', 'abp-article-slug', return_content=True)
             image_url = extract_image_src(soup)
             byline_author = extract_and_print_content(soup, 'div', 'abp-article-byline-author', return_content=True)
-            article_detail = extract_and_print_content(soup, 'div', 'abp-story-detail', return_content=True, exclude_class=['readMore', 'twitter-tweet','abp-crick-wrap','instagram-media'])
+            article_detail = extract_and_print_content(soup, 'div', 'abp-story-detail', return_content=True,
+                                                        exclude_class=['readMore', 'twitter-tweet','abp-crick-wrap','instagram-media','article-pg-title','abp-article-title'])
 
             if all([title, slug, image_url, byline_author, article_detail]):
                 store_article_data(article_url, title, slug, image_url, byline_author, article_detail, news_date,
@@ -110,6 +112,9 @@ def extract_and_print_content(soup, tag, class_name, return_content=False, exclu
                 for class_to_exclude in exclude_class:
                     for element in item.find_all(class_=class_to_exclude):
                         element.decompose()
+
+            for a_tag in item.find_all('a'):
+                a_tag.decompose()
             result += item.get_text() + " "
         result = result.strip()
         if return_content:
@@ -132,8 +137,12 @@ def extract_image_src(soup):
 
 def store_article_data(news_source_url, title, slug, image_url, byline_author, article_detail, article_date, article_datetime):
     try:
+        # Generate a unique UUID for the article
+        unique_id = str(uuid.uuid4())
+
         # Get today's date in DD-MM-YY format
         today_date = datetime.datetime.today().strftime('%Y-%m-%d')
+
         # Define the path for the daily image folder
         daily_image_dir = os.path.join(IMAGE_DIR, today_date)
 
@@ -165,9 +174,9 @@ def store_article_data(news_source_url, title, slug, image_url, byline_author, a
                             print(f"Image saved: {local_image_path}")
                     # Insert article data into the database, including the local image path
                     cursor.execute(""" 
-                        INSERT INTO news_articles (news_source_url, title, slug, image_path, byline_author, article_detail, article_date, article_date_and_time)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-                    """, (news_source_url, title, slug, local_image_path, byline_author, article_detail, article_date, article_datetime))
+                        INSERT INTO news_articles (news_source_url, title, slug, image_path, byline_author, article_detail, article_date, article_date_and_time, unique_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (news_source_url, title, slug, local_image_path, byline_author, article_detail, article_date, article_datetime, unique_id))
                     conn.commit()
                     print("Article stored.")
     except Exception as error:
