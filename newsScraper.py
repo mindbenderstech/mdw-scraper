@@ -42,8 +42,8 @@ def fetch_sitemap_urls(sitemap_url):
 
                 # Pass required news_urls
                 if len(news_urls) >= 2 and len(lastmods) >= 2:
-                    # fetch_and_extract_loc_from_xml(news_urls[0], lastmods[0])
-                    fetch_and_extract_loc_from_xml(news_urls[1], lastmods[1])
+                    fetch_and_extract_loc_from_xml(news_urls[0], lastmods[0])
+                    # fetch_and_extract_loc_from_xml(news_urls[1], lastmods[1])
                     # fetch_and_extract_loc_from_xml(news_urls[2], lastmods[2])
                 else:
                     print("Not enough URLs to pass.")
@@ -66,7 +66,7 @@ def fetch_and_extract_loc_from_xml(xml_url,news_date):
             converted_article_datetime = None
 
             # Process up to 2 URLs (or more if desired) from loc_tags
-            for i, loc_tag in enumerate(loc_tags):  # Adjust the slice to fetch more URLs if needed
+            for i, loc_tag in enumerate(loc_tags[:2]):  # Adjust the slice to fetch more URLs if needed
                 if i < len(date_and_time):
                     print(f"\nFound article URL {i + 1}: {loc_tag.get_text()}")
                     print(f"Article Date and Time: {date_and_time[i]}")
