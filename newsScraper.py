@@ -66,7 +66,7 @@ def fetch_and_extract_loc_from_xml(xml_url,news_date):
             converted_article_datetime = None
 
             # Process up to 2 URLs (or more if desired) from loc_tags
-            for i, loc_tag in enumerate(loc_tags[:2]):  # Adjust the slice to fetch more URLs if needed
+            for i, loc_tag in enumerate(loc_tags[:1]):  # Adjust the slice to fetch more URLs if needed
                 if i < len(date_and_time):
                     print(f"\nFound article URL {i + 1}: {loc_tag.get_text()}")
                     print(f"Article Date and Time: {date_and_time[i]}")
@@ -152,8 +152,8 @@ def store_article_data(news_source_url, title, slug, image_url, byline_author, a
             os.makedirs(daily_image_dir, exist_ok=True)
         else:
             print(f"Using existing folder for today's date: {daily_image_dir}")
-
-        with psycopg2.connect(dbname="news_db", user="postgres", password="1234", host="localhost", port="5432") as conn:
+        # The Previous code host was (host="localhost")
+        with psycopg2.connect(dbname="news_db", user="postgres", password="1234", host="host.docker.internal", port="5432") as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM news_articles WHERE news_source_url = %s;", (news_source_url,))
                 if cursor.fetchone():
@@ -185,8 +185,8 @@ def store_article_data(news_source_url, title, slug, image_url, byline_author, a
 # Function to reset a sequence if the table is empty
 def reset_sequence_if_empty():
     try:
-        # Connect to PostgreSQL
-        with psycopg2.connect(dbname="news_db", user="postgres", password="1234", host="localhost",
+        # Connect to PostgreSQL previous code was (host="localhost")
+        with psycopg2.connect(dbname="news_db", user="postgres", password="1234", host="host.docker.internal",
                               port="5432") as conn:
             with conn.cursor() as cursor:
                 # Check if the table is empty
