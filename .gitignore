@@ -1,5 +1,18 @@
-.venv/
-.idea/
-images/
+# Python cache files
 __pycache__/
 *.pyc
+
+# Virtual environment folder
+.venv/
+
+# PyCharm project files
+.idea/
+
+# Ignore images folder completely
+images/
+
+# Ignore environment variable file
+.env
+
+# Docker files (optional if you want)
+Dockerfile
